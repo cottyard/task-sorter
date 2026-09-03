@@ -1,0 +1,192 @@
+{
+  "columns": [
+    {
+      "id": "short",
+      "title": "这两天",
+      "badgeColor": "rose",
+      "accent": "#f43f5e",
+      "icon": "Zap"
+    },
+    {
+      "id": "mid",
+      "title": "本周",
+      "badgeColor": "amber",
+      "accent": "#f59e0b",
+      "icon": "Timer"
+    },
+    {
+      "id": "long",
+      "title": "一个月内",
+      "badgeColor": "blue",
+      "accent": "#3b82f6",
+      "icon": "Calendar"
+    },
+    {
+      "id": "backlog",
+      "title": "不急",
+      "badgeColor": "emerald",
+      "accent": "#10b981",
+      "icon": "Inbox"
+    },
+    {
+      "id": "col-1788458198388",
+      "title": "测试泳道",
+      "badgeColor": "violet",
+      "accent": "#6366f1",
+      "icon": "Calendar"
+    }
+  ],
+  "members": [
+    {
+      "id": "m1",
+      "name": "邹畅",
+      "avatarColor": "#6366f1"
+    },
+    {
+      "id": "m2",
+      "name": "艳艳",
+      "avatarColor": "#0ea5e9"
+    },
+    {
+      "id": "m3",
+      "name": "丹丹",
+      "avatarColor": "#f43f5e"
+    },
+    {
+      "id": "m4",
+      "name": "草莓",
+      "avatarColor": "#10b981"
+    },
+    {
+      "id": "m5",
+      "name": "瓜子",
+      "avatarColor": "#f59e0b"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-1",
+      "columnId": "short",
+      "title": "修复登录态过期提示与重新引导交互",
+      "description": "移动端与PC端局域网环境超时时需要平滑提示用户，并保留表单暂存数据。",
+      "assigneeId": "m1",
+      "order": 2,
+      "checklist": [
+        {
+          "id": "c1",
+          "text": "检查 Token 校验逻辑",
+          "completed": true
+        },
+        {
+          "id": "c2",
+          "text": "增加弹窗二次确认与重连机制",
+          "completed": false
+        }
+      ],
+      "completed": false,
+      "createdAt": "2026-09-03T10:00:00.000Z"
+    },
+    {
+      "id": "task-2",
+      "columnId": "short",
+      "title": "优化局域网数据实时广播机制",
+      "description": "多成员同时拖动卡片时添加乐观更新并确保无闪烁。",
+      "assigneeId": "m2",
+      "order": 3,
+      "checklist": [
+        {
+          "id": "c3",
+          "text": "联调 Socket.io 广播事件",
+          "completed": true
+        },
+        {
+          "id": "c4",
+          "text": "压测 5 客户端并发修改",
+          "completed": true
+        }
+      ],
+      "completed": true,
+      "createdAt": "2026-09-03T11:20:00.000Z",
+      "updatedAt": "2026-09-03T17:35:23.711Z"
+    },
+    {
+      "id": "task-3",
+      "columnId": "mid",
+      "title": "设计团队成员自主修改昵称与代表色",
+      "description": "支持在顶部导航点击头像直接编辑团队成员的名称与对应代表色。",
+      "assigneeId": "m3",
+      "order": 0,
+      "checklist": [
+        {
+          "id": "c5",
+          "text": "拟定成员配置数据接口",
+          "completed": true
+        },
+        {
+          "id": "c6",
+          "text": "设计交互小面板",
+          "completed": false
+        }
+      ],
+      "completed": false,
+      "createdAt": "2026-09-02T14:10:00.000Z"
+    },
+    {
+      "id": "task-4",
+      "columnId": "mid",
+      "title": "配置 Windows 后台静默启动与守护进程",
+      "description": "编写可靠的 start.bat 与后台托管方案，开机后自动拉起服务无需手动开窗口。",
+      "assigneeId": "m4",
+      "order": 1,
+      "checklist": [
+        {
+          "id": "c7",
+          "text": "测试批处理脚本在纯净 Windows 11/10 运行",
+          "completed": false
+        }
+      ],
+      "completed": false,
+      "createdAt": "2026-09-01T09:00:00.000Z",
+      "updatedAt": "2026-09-03T17:21:08.411Z"
+    },
+    {
+      "id": "task-5",
+      "columnId": "long",
+      "title": "任务数据每周自动备份与归档导出",
+      "description": "每周定时将 db.json 打包备份至 backup 目录，并提供一键导出 JSON / CSV 功能。",
+      "assigneeId": "m5",
+      "order": 0,
+      "checklist": [],
+      "completed": false,
+      "createdAt": "2026-08-30T16:00:00.000Z"
+    },
+    {
+      "id": "task-6",
+      "columnId": "backlog",
+      "title": "探索团队周报生成与甘特排期简易视图",
+      "description": "基于已完成任务自动整理当周团队完成清单，减少周会汇报沟通成本。",
+      "assigneeId": "m3",
+      "order": 2,
+      "checklist": [],
+      "completed": false,
+      "createdAt": "2026-08-25T15:30:00.000Z"
+    },
+    {
+      "id": "task-1788458198377-4nhn5",
+      "columnId": "short",
+      "title": "自动化测试任务",
+      "description": "测试任务详细内容说明",
+      "assigneeId": "m1",
+      "order": 1,
+      "checklist": [
+        {
+          "id": "c1",
+          "text": "子任务1",
+          "completed": false
+        }
+      ],
+      "completed": false,
+      "createdAt": "2026-09-03T17:56:38.377Z"
+    }
+  ]
+}
