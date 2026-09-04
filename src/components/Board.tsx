@@ -7,7 +7,7 @@ interface BoardProps {
   columns: ColumnType[];
   tasks: Task[];
   members: Member[];
-  boardRef: React.RefObject<HTMLDivElement | null>;
+  boardRef: React.RefObject<HTMLDivElement>;
   isDragging: boolean;
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;

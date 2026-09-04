@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Droppable } from '@hello-pangea/dnd';
 import { Column as ColumnType, Task, Member } from '../types';
 import { TaskCard } from './TaskCard';
-import { Plus, Edit2, Trash2, Check } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, Copy, CheckCircle2 } from 'lucide-react';
+import { formatTasksPrettyPrint, copyToClipboard } from '../utils/taskExport';
 
 interface ColumnProps {
   column: ColumnType;
@@ -61,11 +62,31 @@ export const Column: React.FC<ColumnProps> = ({
   const activeTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
 
+  // Copy state for completed divider
+  const [copiedCompleted, setCopiedCompleted] = useState(false);
+
   // Inline column title editing
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(column.title);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleCopyCompleted = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (completedTasks.length === 0) return;
+
+    const formatted = formatTasksPrettyPrint({
+      title: `${column.title} · 已完成`,
+      tasks: completedTasks,
+      members,
+    });
+
+    const success = await copyToClipboard(formatted);
+    if (success) {
+      setCopiedCompleted(true);
+      setTimeout(() => setCopiedCompleted(false), 2000);
+    }
+  };
 
   useEffect(() => {
     setTitleInput(column.title);
@@ -216,10 +237,48 @@ export const Column: React.FC<ColumnProps> = ({
 
             {/* Completed tasks section */}
             {completedTasks.length > 0 && (
-              <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/80">
-                <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1.5 px-1 flex items-center justify-between">
-                  <span>已完成 ({completedTasks.length})</span>
+              <div className="mt-3 pt-1">
+                {/* Interactive Divider Line with Copy Feature */}
+                <div
+                  onClick={handleCopyCompleted}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleCopyCompleted();
+                    }
+                  }}
+                  title="点击复制「已完成」任务清单"
+                  className="group/divider flex items-center gap-2 px-1.5 py-1.5 rounded-xl cursor-pointer select-none transition-all duration-150 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 active:scale-[0.99] mb-1.5"
+                >
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500 group-hover/divider:text-slate-700 dark:group-hover/divider:text-slate-200 transition-colors">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500/80 group-hover/divider:text-emerald-500 transition-colors shrink-0" />
+                    <span>已完成</span>
+                    <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                      {completedTasks.length}
+                    </span>
+                  </div>
+
+                  {/* Center Divider Line */}
+                  <div className="flex-1 h-px bg-slate-200/80 dark:bg-slate-800/80 group-hover/divider:bg-indigo-300/80 dark:group-hover/divider:bg-indigo-600/80 transition-colors" />
+
+                  {/* Copy Action Badge */}
+                  <div
+                    className={`flex items-center justify-center w-5 h-5 rounded-md border transition-all duration-150 shrink-0 ${
+                      copiedCompleted
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-300 scale-110'
+                        : 'bg-white/80 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/70 text-slate-400 group-hover/divider:text-indigo-600 dark:group-hover/divider:text-indigo-400 group-hover/divider:border-indigo-200 dark:group-hover/divider:border-indigo-800 group-hover/divider:bg-white dark:group-hover/divider:bg-slate-800 shadow-2xs'
+                    }`}
+                  >
+                    {copiedCompleted ? (
+                      <Check className="w-3 h-3 text-emerald-500 animate-in zoom-in-50 duration-150" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </div>
                 </div>
+
                 {completedTasks.map((task, index) => (
                   <TaskCard
                     key={task.id}

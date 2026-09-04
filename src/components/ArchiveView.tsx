@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Member, Task } from '../types';
-import { RotateCcw, Trash2, CheckCircle2, Calendar, CheckSquare, Inbox } from 'lucide-react';
+import { RotateCcw, Trash2, CheckCircle2, Calendar, CheckSquare, Inbox, Copy, Check } from 'lucide-react';
+import { formatTasksPrettyPrint, copyToClipboard } from '../utils/taskExport';
 
 interface ArchiveViewProps {
   members: Member[];
@@ -48,6 +49,29 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
 }) => {
   const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedDateKey, setCopiedDateKey] = useState<string | null>(null);
+
+  const handleCopyDateGroup = async (
+    colName: string,
+    group: { key: string; label: string; tasks: Task[] },
+    e?: React.MouseEvent
+  ) => {
+    if (e) e.stopPropagation();
+    if (group.tasks.length === 0) return;
+
+    const formatted = formatTasksPrettyPrint({
+      title: `${colName} · ${group.label}`,
+      subTitle: '归档任务清单',
+      tasks: group.tasks,
+      members,
+    });
+
+    const success = await copyToClipboard(formatted);
+    if (success) {
+      setCopiedDateKey(`${colName}-${group.key}`);
+      setTimeout(() => setCopiedDateKey(null), 2000);
+    }
+  };
 
   const fetchArchived = async () => {
     try {
@@ -138,23 +162,24 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
             >
               {/* Member Column Header */}
               <div className="flex items-center justify-between px-2 pt-1 pb-3 border-b border-slate-200/50 dark:border-slate-800/60">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   {col.isUnassigned ? (
-                    <div className="w-6 h-6 rounded-full border border-dashed border-slate-400 flex items-center justify-center text-xs text-slate-400 font-bold">
+                    <div className="w-6 h-6 rounded-full border border-dashed border-slate-400 flex items-center justify-center text-xs text-slate-400 font-bold shrink-0">
                       -
                     </div>
                   ) : (
                     <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs"
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs shrink-0"
                       style={{ backgroundColor: col.avatarColor }}
                     >
                       {col.name.charAt(0)}
                     </div>
                   )}
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
                     {col.name}
                   </span>
                 </div>
+
                 <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                   {colTasks.length}
                 </span>
@@ -168,14 +193,50 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
                     <span className="text-xs">暂无记录</span>
                   </div>
                 ) : (
-                  groups.map((group) => (
-                    <div key={group.key} className="space-y-1.5">
-                      {/* Date Divider */}
-                      <div className="flex items-center gap-2 px-1 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 select-none">
-                        <Calendar className="w-3 h-3" />
-                        <span>{group.label}</span>
-                        <div className="flex-1 h-px bg-slate-200/80 dark:bg-slate-800/80 ml-1" />
-                      </div>
+                  groups.map((group) => {
+                    const isCopied = copiedDateKey === `${col.name}-${group.key}`;
+
+                    return (
+                      <div key={group.key} className="space-y-1.5">
+                        {/* Interactive Date Divider with Copy Feature */}
+                        <div
+                          onClick={(e) => handleCopyDateGroup(col.name, group, e)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleCopyDateGroup(col.name, group);
+                            }
+                          }}
+                          title={`点击复制「${col.name} · ${group.label}」归档任务清单`}
+                          className="group/divider flex items-center gap-2 px-1.5 py-1.5 rounded-xl cursor-pointer select-none transition-all duration-150 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 active:scale-[0.99]"
+                        >
+                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500 group-hover/divider:text-slate-700 dark:group-hover/divider:text-slate-200 transition-colors shrink-0">
+                            <Calendar className="w-3 h-3 text-slate-400 group-hover/divider:text-indigo-500 dark:group-hover/divider:text-indigo-400 transition-colors" />
+                            <span>{group.label}</span>
+                            <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                              {group.tasks.length}
+                            </span>
+                          </div>
+
+                          <div className="flex-1 h-px bg-slate-200/80 dark:bg-slate-800/80 group-hover/divider:bg-indigo-300/80 dark:group-hover/divider:bg-indigo-600/80 transition-colors" />
+
+                          {/* Copy Action Badge */}
+                          <div
+                            className={`flex items-center justify-center w-5 h-5 rounded-md border transition-all duration-150 shrink-0 ${
+                              isCopied
+                                ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-300 scale-110'
+                                : 'bg-white/80 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/70 text-slate-400 group-hover/divider:text-indigo-600 dark:group-hover/divider:text-indigo-400 group-hover/divider:border-indigo-200 dark:group-hover/divider:border-indigo-800 group-hover/divider:bg-white dark:group-hover/divider:bg-slate-800 shadow-2xs'
+                            }`}
+                          >
+                            {isCopied ? (
+                              <Check className="w-3 h-3 text-emerald-500 animate-in zoom-in-50 duration-150" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </div>
+                        </div>
 
                       {/* Task Cards in this Date Group */}
                       {group.tasks.map((task) => {
@@ -234,10 +295,11 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
                         );
                       })}
                     </div>
-                  ))
-                )}
-              </div>
+                  );
+                })
+              )}
             </div>
+          </div>
           );
         })}
       </div>
