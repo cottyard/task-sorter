@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Task, Member, ChecklistItem } from '../types';
-import { X, Plus, Trash2, CheckSquare, Clock, Check } from 'lucide-react';
+import { X, Plus, Trash2, CheckSquare, Clock, Check, GripVertical } from 'lucide-react';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -58,9 +58,16 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [newChecklistText, setNewChecklistText] = useState('');
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [editingChecklistId, setEditingChecklistId] = useState<string | null>(null);
+  const [editingChecklistText, setEditingChecklistText] = useState('');
+  const [draggingChecklistIndex, setDraggingChecklistIndex] = useState<number | null>(null);
+  const draggingChecklistIndexRef = useRef<number | null>(null);
 
   useEffect(() => {
     setIsConfirmingDelete(false);
+    setEditingChecklistId(null);
+    setDraggingChecklistIndex(null);
+    draggingChecklistIndexRef.current = null;
     if (task) {
       setTitle(task.title || '');
       setDescription(task.description || '');
@@ -120,6 +127,73 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
   const handleDeleteChecklistItem = (id: string) => {
     setChecklist(checklist.filter((item) => item.id !== id));
+    if (editingChecklistId === id) {
+      setEditingChecklistId(null);
+      setEditingChecklistText('');
+    }
+  };
+
+  // --- Checklist item inline editing ---
+  const handleStartEditChecklistItem = (item: ChecklistItem) => {
+    setEditingChecklistId(item.id);
+    setEditingChecklistText(item.text);
+  };
+
+  const handleFinishEditChecklistItem = () => {
+    if (editingChecklistId === null) return;
+    const trimmed = editingChecklistText.trim();
+    if (trimmed) {
+      setChecklist((prev) =>
+        prev.map((item) =>
+          item.id === editingChecklistId ? { ...item, text: trimmed } : item
+        )
+      );
+    }
+    setEditingChecklistId(null);
+    setEditingChecklistText('');
+  };
+
+  const handleCancelEditChecklistItem = () => {
+    setEditingChecklistId(null);
+    setEditingChecklistText('');
+  };
+
+  const handleEditChecklistKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleFinishEditChecklistItem();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleCancelEditChecklistItem();
+    }
+  };
+
+  // --- Checklist item drag reorder ---
+  const handleChecklistDragStart = (e: React.DragEvent, index: number) => {
+    draggingChecklistIndexRef.current = index;
+    setDraggingChecklistIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleChecklistDragEnter = (index: number) => {
+    const from = draggingChecklistIndexRef.current;
+    if (from === null || from === index) return;
+    setChecklist((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(index, 0, moved);
+      return next;
+    });
+    draggingChecklistIndexRef.current = index;
+    setDraggingChecklistIndex(index);
+  };
+
+  const handleChecklistDragEnd = () => {
+    draggingChecklistIndexRef.current = null;
+    setDraggingChecklistIndex(null);
   };
 
   return (
@@ -245,37 +319,70 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   </span>
                 </div>
                 <div className="space-y-1 mb-2">
-                  {checklist.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs"
-                    >
-                      <label className="flex items-center gap-2 cursor-pointer flex-1 mr-2">
+                  {checklist.map((item, index) => {
+                    const isEditing = editingChecklistId === item.id;
+                    const isDragging = draggingChecklistIndex === index;
+                    return (
+                      <div
+                        key={item.id}
+                        draggable={!isEditing}
+                        onDragStart={(e) => handleChecklistDragStart(e, index)}
+                        onDragEnter={() => handleChecklistDragEnter(index)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => e.preventDefault()}
+                        onDragEnd={handleChecklistDragEnd}
+                        className={`flex items-center p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border text-xs transition-opacity ${
+                          isDragging
+                            ? 'opacity-40 border-indigo-400 dark:border-indigo-500'
+                            : 'border-slate-200/60 dark:border-slate-700/60'
+                        }`}
+                      >
+                        <GripVertical
+                          className={`w-3 h-3 shrink-0 mr-1 transition-colors ${
+                            isDragging
+                              ? 'text-indigo-400'
+                              : 'text-slate-300 dark:text-slate-600 cursor-grab active:cursor-grabbing'
+                          }`}
+                        />
                         <input
                           type="checkbox"
                           checked={item.completed}
                           onChange={() => handleToggleChecklistItem(item.id)}
-                          className="rounded text-indigo-600 focus:ring-0 cursor-pointer"
+                          className="rounded text-indigo-600 focus:ring-0 cursor-pointer shrink-0"
                         />
-                        <span
-                          className={`${
-                            item.completed
-                              ? 'line-through text-slate-400'
-                              : 'text-slate-700 dark:text-slate-200'
-                          }`}
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            value={editingChecklistText}
+                            onChange={(e) => setEditingChecklistText(e.target.value)}
+                            onKeyDown={handleEditChecklistKeyDown}
+                            onBlur={handleFinishEditChecklistItem}
+                            className="flex-1 mx-2 px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-indigo-400 dark:border-indigo-500 focus:outline-none text-slate-800 dark:text-white"
+                          />
+                        ) : (
+                          <span
+                            onClick={() => handleStartEditChecklistItem(item)}
+                            title="单击编辑，拖动左侧手柄调整顺序"
+                            className={`flex-1 mx-2 cursor-text rounded-md px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors ${
+                              item.completed
+                                ? 'line-through text-slate-400'
+                                : 'text-slate-700 dark:text-slate-200'
+                            }`}
+                          >
+                            {item.text}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteChecklistItem(item.id)}
+                          className="text-slate-400 hover:text-rose-500 p-0.5 shrink-0"
                         >
-                          {item.text}
-                        </span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteChecklistItem(item.id)}
-                        className="text-slate-400 hover:text-rose-500 p-0.5"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Add Checklist item input */}
