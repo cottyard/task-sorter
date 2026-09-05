@@ -60,7 +60,7 @@ app.post('/api/tasks', async (req, res) => {
       columnId: req.body.columnId || (data.columns[0] ? data.columns[0].id : 'short'),
       title: (req.body.title || '').trim(),
       description: (req.body.description || '').trim(),
-      assigneeId: req.body.assigneeId || (data.members[0] ? data.members[0].id : ''),
+      assigneeId: req.body.assigneeId || '',
       order: req.body.order ?? 0,
       checklist: Array.isArray(req.body.checklist) ? req.body.checklist : [],
       completed: Boolean(req.body.completed),

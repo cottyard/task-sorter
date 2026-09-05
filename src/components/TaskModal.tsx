@@ -78,10 +78,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setTitle('');
       setDescription('');
       setColumnId(initialColumnId || 'short');
-      setAssigneeId(members[0]?.id || '');
+      setAssigneeId('');
       setChecklist([]);
     }
-  }, [task, initialColumnId, members, isOpen]);
+  }, [task, initialColumnId, isOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
