@@ -253,7 +253,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
               {/* Assignee selection as pure circular avatar buttons */}
               <div>
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap py-1">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap px-2.5 py-2.5">
                   {/* Unassigned button */}
                   <button
                     type="button"

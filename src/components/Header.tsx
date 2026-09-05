@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   // Reusable member pills renderer (Pure circular avatars)
   const renderMemberAvatars = () => (
-    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 px-0.5">
+    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 pl-0.5 pr-3">
       {/* All Tasks Pill */}
       <button
         onClick={() => onSelectMember(null)}
