@@ -146,7 +146,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                           onClick={() => handleChangeColor(member.id, c)}
                           className={`w-5 h-5 rounded-full transition-all flex items-center justify-center active:scale-90 ${
                             isSelected
-                              ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900 scale-110 shadow-xs'
+                              ? 'scale-110 shadow-xs'
                               : 'opacity-70 hover:opacity-100 hover:scale-105'
                           }`}
                           style={{ backgroundColor: c }}

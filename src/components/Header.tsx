@@ -93,13 +93,17 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onSelectMember(isSelected ? null : member.id)}
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs transition-all active:scale-95 ${
                 isSelected
-                  ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900 scale-110 shadow-sm'
+                  ? 'scale-110 shadow-sm'
                   : 'opacity-75 hover:opacity-100 hover:scale-105'
               }`}
               style={{ backgroundColor: member.avatarColor }}
               title={member.name}
             >
-              {member.name.charAt(0)}
+              {isSelected ? (
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
+              ) : (
+                member.name.charAt(0)
+              )}
             </button>
             {count > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[13px] h-[13px] px-0.5 rounded-full bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 text-[8px] font-bold flex items-center justify-center pointer-events-none shadow-xs">
@@ -117,12 +121,16 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onSelectMember(selectedMemberId === 'unassigned' ? null : 'unassigned')}
             className={`w-7 h-7 rounded-full border border-dashed flex items-center justify-center text-xs font-medium transition-all active:scale-95 ${
               selectedMemberId === 'unassigned'
-                ? 'border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-400 dark:bg-indigo-950 dark:text-indigo-300 ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-900'
+                ? 'border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-400 dark:bg-indigo-950 dark:text-indigo-300 scale-110'
                 : 'border-slate-300 dark:border-slate-700 text-slate-400 hover:border-slate-400'
             }`}
             title="未分配任务"
           >
-            -
+            {selectedMemberId === 'unassigned' ? (
+              <Check className="w-3 h-3 stroke-[3]" />
+            ) : (
+              '-'
+            )}
           </button>
           <span className="absolute -top-1 -right-1 min-w-[13px] h-[13px] px-0.5 rounded-full bg-slate-500 text-white text-[8px] font-bold flex items-center justify-center pointer-events-none shadow-xs">
             {unassignedCount}

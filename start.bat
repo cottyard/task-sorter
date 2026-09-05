@@ -1,40 +1,86 @@
 @echo off
-chcp 65001 >nul
-title TaskSorter - 团队任务看板 (端口 80)
+setlocal enabledelayedexpansion
+
+REM ============================================================
+REM  TaskSorter launcher
+REM  start.bat           -> run server in foreground (port 80)
+REM  start.bat install   -> install auto-start on boot (hidden)
+REM  start.bat uninstall -> remove auto-start on boot
+REM  start.bat --hidden  -> silent mode (used by auto-start)
+REM ============================================================
+
+if /i "%~1"=="install"   goto :install
+if /i "%~1"=="uninstall" goto :uninstall
+
+set "HIDDEN=0"
+if /i "%~1"=="--hidden" set "HIDDEN=1"
+
+title TaskSorter - Team Task Board (port 80)
 
 echo ========================================================
-echo        🚀 TaskSorter 团队任务跟踪服务 (常驻 80 端口)
+echo        TaskSorter Team Task Service (port 80)
 echo ========================================================
 echo.
 
 where node >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [错误] 未检测到 Node.js 环境！
-    echo 请先在电脑上安装 Node.js (https://nodejs.org)
+if errorlevel 1 (
+    if "!HIDDEN!"=="1" (
+        echo [ERROR] Node.js not found. Install from https://nodejs.org > "%TEMP%\TaskSorter-autostart-error.log"
+        exit /b 1
+    )
+    echo [ERROR] Node.js not found. Install from https://nodejs.org
     echo.
     pause
     exit /b
 )
 
 if not exist "node_modules\" (
-    echo [提示] 正在安装必要依赖...
-    call npm install --production
+    echo [INFO] Installing dependencies...
+    call npm install
     echo.
 )
 
 if not exist "dist\" (
-    echo [提示] 正在编译前端界面...
+    echo [INFO] Building frontend...
     call npm run build
     echo.
 )
 
-echo [提示] 服务正在 80 端口运行，请勿关闭本窗口（可最小化）...
+echo [INFO] Service running on port 80. Keep this window open (can be minimized).
 echo.
 
 node server/server.js
 
-if %errorlevel% neq 0 (
+if errorlevel 1 (
+    if "!HIDDEN!"=="1" (
+        echo [ERROR] Service failed to start. Port 80 may be in use. > "%TEMP%\TaskSorter-autostart-error.log"
+        exit /b 1
+    )
     echo.
-    echo [提示] 若提示端口冲突，请检查是否有其他程序占用 80 端口，或右键“以管理员身份运行”。
+    echo [INFO] If port conflict, check what is using port 80, or run as Administrator.
     pause
 )
+goto :eof
+
+:install
+set "STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
+set "VB_FILE=%STARTUP_DIR%\TaskSorter.vbs"
+if not exist "%STARTUP_DIR%" mkdir "%STARTUP_DIR%"
+> "%VB_FILE%" echo Set sh = CreateObject("WScript.Shell")
+>> "%VB_FILE%" echo sh.Run "cmd /c ""%~dp0start.bat"" --hidden", 0, False
+echo [DONE] Auto-start installed: %VB_FILE%
+echo TaskSorter will start on port 80 (hidden) after next boot.
+echo To remove it, run: start.bat uninstall
+pause
+goto :eof
+
+:uninstall
+set "VB_FILE=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\TaskSorter.vbs"
+if exist "%VB_FILE%" (
+    del /f /q "%VB_FILE%"
+    echo [DONE] Auto-start removed.
+) else (
+    echo [INFO] No auto-start entry found.
+)
+pause
+goto :eof
