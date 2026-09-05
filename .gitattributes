@@ -1,0 +1,15 @@
+# 统一换行符：文本文件入库时规范化为 LF，检出也为 LF
+* text=auto eol=lf
+
+# Windows 批处理脚本保持 CRLF
+*.bat text eol=crlf
+
+# 明确的文本类型
+*.css     text
+*.html    text
+*.js      text
+*.json    text
+*.md      text
+*.svg     text
+*.ts      text
+*.tsx     text
