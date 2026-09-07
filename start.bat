@@ -15,6 +15,13 @@ if /i "%~1"=="uninstall" goto :uninstall
 set "HIDDEN=0"
 if /i "%~1"=="--hidden" set "HIDDEN=1"
 
+REM Switch to the script's own folder so relative paths
+REM (node_modules, dist, server/server.js) resolve correctly.
+REM The Startup VBS launches this script with a working
+REM directory of C:\Windows\System32, which would otherwise
+REM make node fail to find server/server.js.
+cd /d "%~dp0"
+
 title TaskSorter - Team Task Board (port 80)
 
 echo ========================================================

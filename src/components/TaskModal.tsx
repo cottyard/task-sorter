@@ -258,18 +258,37 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setAssigneeId('')}
-                    className={`w-7 h-7 rounded-full border border-dashed flex items-center justify-center text-xs shrink-0 transition-all active:scale-95 ${
+                    className={`relative w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 transition-all active:scale-95 ${
                       assigneeId === ''
-                        ? 'border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-400 dark:bg-indigo-950 dark:text-indigo-300 scale-110'
-                        : 'border-slate-300 dark:border-slate-700 text-slate-400 hover:border-slate-400'
+                        ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300 scale-110'
+                        : 'text-slate-400 dark:text-slate-500 hover:text-slate-500'
                     }`}
                     title="未指定负责人"
                   >
-                    {assigneeId === '' ? (
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    ) : (
-                      '-'
-                    )}
+                    {/* perfectly closing dashed ring (pathLength normalized so the dash pattern ends exactly where it starts) */}
+                    <svg
+                      className="absolute inset-0 w-full h-full"
+                      viewBox="0 0 100 100"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="48"
+                        stroke="currentColor"
+                        strokeWidth="3.5"
+                        pathLength="1"
+                        strokeDasharray="0.03125 0.03125"
+                      />
+                    </svg>
+                    <span className="relative">
+                      {assigneeId === '' ? (
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      ) : (
+                        '-'
+                      )}
+                    </span>
                   </button>
 
                   {/* Member circular buttons */}
