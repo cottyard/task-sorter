@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Column as ColumnType, Task, Member } from '../types';
 import { Column } from './Column';
-import { Plus, Check, X, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { Plus, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface BoardProps {
   columns: ColumnType[];
@@ -208,17 +208,9 @@ export const Board: React.FC<BoardProps> = ({
 
   return (
     <div className="relative w-full min-w-0 group/board flex flex-col">
-      {/* Swimlane Overview Tracker Header (when 4+ columns exist) */}
+      {/* Quick Swimlane Navigator Pills (when 4+ columns exist) */}
       {columns.length >= 4 && (
-        <div className="flex items-center justify-between pb-2 px-1 text-xs select-none">
-          <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-[11px]">
-            <Layers className="w-3 h-3 text-indigo-500/80" />
-            <span>共 {columns.length} 个泳道</span>
-            <span className="text-slate-300 dark:text-slate-700">·</span>
-            <span className="hidden sm:inline">可鼠标滚轮或按住空白处拖拽平移</span>
-          </div>
-
-          {/* Quick Swimlane Navigator Pills */}
+        <div className="flex items-center justify-end pb-2 px-1 text-xs select-none">
           <div className="flex items-center gap-1 bg-slate-200/60 dark:bg-slate-800/60 p-1 rounded-full border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xs">
             {columns.map((col, idx) => {
               const colTasks = tasks.filter((t) => t.columnId === col.id);
@@ -240,61 +232,50 @@ export const Board: React.FC<BoardProps> = ({
         </div>
       )}
 
-      {/* Board Viewport Area with Ambient Edge Fade Masks */}
-      <div className="relative w-full min-w-0">
-        {/* Ambient Left Edge Fade Mask */}
-        <div
-          className={`pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-24 bg-gradient-to-r from-slate-50 dark:from-slate-950 via-slate-50/80 dark:via-slate-950/80 to-transparent z-20 transition-opacity duration-300 ${
-            canScrollLeft && !isDragging ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
-
-        {/* Ambient Right Edge Fade Mask */}
-        <div
-          className={`pointer-events-none absolute right-0 top-0 bottom-0 w-20 sm:w-28 bg-gradient-to-l from-slate-50 dark:from-slate-950 via-slate-50/80 dark:via-slate-950/80 to-transparent z-20 transition-opacity duration-300 ${
-            canScrollRight && !isDragging ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
-
-        {/* Left Floating Overflow Glass Capsule */}
-        {canScrollLeft && !isDragging && (
+      {/* Main Board Row: Left Arrow | Scrollable Lanes Viewport | Right Arrow */}
+      <div className="flex items-center gap-1 sm:gap-2 w-full min-w-0">
+        {/* Left Arrow Button (Outside swimlanes, never overlapping) */}
+        <div className="hidden sm:flex shrink-0 w-8 h-8 items-center justify-center">
           <button
             type="button"
             onClick={() => scrollByAmount(-360)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/90 dark:border-slate-700/90 shadow-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:scale-105 active:scale-95 transition-all cursor-pointer select-none group"
-            title="向左平移泳道 (或鼠标滚轮/按住左键拖拽)"
+            disabled={!canScrollLeft}
+            className={`w-8 h-8 rounded-full border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-800/95 shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-slate-700/60 hover:scale-110 active:scale-95 transition-all ${
+              canScrollLeft && !isDragging
+                ? 'opacity-100 cursor-pointer'
+                : 'opacity-0 pointer-events-none'
+            }`}
+            title="向左平移泳道"
           >
-            <div className="w-4 h-4 rounded-full bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-              <ChevronLeft className="w-3 h-3 transition-transform group-hover:-translate-x-0.5" />
-            </div>
-            <span className="hidden sm:inline text-[11px]">左侧泳道</span>
+            <ChevronLeft className="w-4 h-4" />
           </button>
-        )}
+        </div>
 
-        {/* Right Floating Overflow Glass Capsule */}
-        {canScrollRight && !isDragging && (
-          <button
-            type="button"
-            onClick={() => scrollByAmount(360)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/90 dark:border-slate-700/90 shadow-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:scale-105 active:scale-95 transition-all cursor-pointer select-none group"
-            title="向右平移泳道 (或鼠标滚轮/按住左键拖拽)"
+        {/* Scrollable Lanes Viewport with Ambient Edge Fade Masks */}
+        <div className="flex-1 min-w-0 relative">
+          {/* Ambient Left Edge Fade Mask */}
+          <div
+            className={`pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-16 bg-gradient-to-r from-slate-50 dark:from-slate-950 via-slate-50/70 dark:via-slate-950/70 to-transparent z-10 transition-opacity duration-300 ${
+              canScrollLeft && !isDragging ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+
+          {/* Ambient Right Edge Fade Mask */}
+          <div
+            className={`pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-20 bg-gradient-to-l from-slate-50 dark:from-slate-950 via-slate-50/70 dark:via-slate-950/70 to-transparent z-10 transition-opacity duration-300 ${
+              canScrollRight && !isDragging ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+
+          {/* Horizontal Scrollable Lane Container (No visible scrollbar) */}
+          <div
+            ref={boardRef}
+            onMouseDown={handleMouseDown}
+            onClickCapture={handleClickCapture}
+            className={`w-full flex gap-3 sm:gap-4 overflow-x-auto pb-4 pt-1 px-1 no-scrollbar items-start ${
+              isPanningState ? 'cursor-grabbing select-none' : 'cursor-grab'
+            } ${isDragging ? 'snap-none' : 'snap-x snap-mandatory sm:snap-none'}`}
           >
-            <span className="hidden sm:inline text-[11px]">更多泳道</span>
-            <div className="w-4 h-4 rounded-full bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-              <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
-            </div>
-          </button>
-        )}
-
-        {/* Horizontal Scrollable Lane Container (No visible scrollbar) */}
-        <div
-          ref={boardRef}
-          onMouseDown={handleMouseDown}
-          onClickCapture={handleClickCapture}
-          className={`w-full flex gap-3 sm:gap-4 overflow-x-auto pb-4 pt-1 px-1 no-scrollbar items-start ${
-            isPanningState ? 'cursor-grabbing select-none' : 'cursor-grab'
-          } ${isDragging ? 'snap-none' : 'snap-x snap-mandatory sm:snap-none'}`}
-        >
           {columns.map((column) => {
             const columnTasks = tasks
               .filter((t) => t.columnId === column.id)
@@ -362,6 +343,24 @@ export const Board: React.FC<BoardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Right Arrow Button (Outside swimlanes, never overlapping) */}
+      <div className="hidden sm:flex shrink-0 w-8 h-8 items-center justify-center">
+        <button
+          type="button"
+          onClick={() => scrollByAmount(360)}
+          disabled={!canScrollRight}
+          className={`w-8 h-8 rounded-full border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-800/95 shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-slate-700/60 hover:scale-110 active:scale-95 transition-all ${
+            canScrollRight && !isDragging
+              ? 'opacity-100 cursor-pointer'
+              : 'opacity-0 pointer-events-none'
+          }`}
+          title="向右平移泳道"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
     </div>
+  </div>
   );
 };
