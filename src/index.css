@@ -60,6 +60,47 @@
   background: rgba(100, 116, 139, 0.6);
 }
 
+/* Board horizontal scrollbar */
+.board-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.board-scrollbar::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.08);
+  border-radius: 9999px;
+  margin: 0 4px;
+}
+
+.dark .board-scrollbar::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.4);
+}
+
+.board-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+.board-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.6);
+}
+
+.dark .board-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+}
+
+.dark .board-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(129, 140, 248, 0.7);
+}
+
+.board-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.dark .board-scrollbar {
+  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+
 /* Dragging visual helpers */
 .is-dragging {
   cursor: grabbing !important;

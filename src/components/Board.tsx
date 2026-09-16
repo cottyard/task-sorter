@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Column as ColumnType, Task, Member } from '../types';
 import { Column } from './Column';
-import { Plus, Check, X } from 'lucide-react';
+import { Plus, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface BoardProps {
   columns: ColumnType[];
@@ -37,6 +37,84 @@ export const Board: React.FC<BoardProps> = ({
   const [isAddingCol, setIsAddingCol] = useState(false);
   const [newColTitle, setNewColTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 15);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 15);
+  }, [boardRef]);
+
+  // Monitor scroll position and resize
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll, { passive: true });
+
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [boardRef, checkScroll, columns.length, tasks.length]);
+
+  // Smooth mouse wheel horizontal scrolling on PC
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // If user is already scrolling horizontally (trackpad / shift key)
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        return;
+      }
+
+      // Check if mouse is over a vertically scrollable element inside a column that can still scroll vertically
+      let target = e.target as HTMLElement | null;
+      let isInsideScrollableChild = false;
+
+      while (target && target !== el) {
+        if (target.scrollHeight > target.clientHeight) {
+          const style = window.getComputedStyle(target);
+          if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+            const canScrollUp = target.scrollTop > 0 && e.deltaY < 0;
+            const canScrollDown =
+              target.scrollTop + target.clientHeight < target.scrollHeight - 1 &&
+              e.deltaY > 0;
+
+            if (canScrollUp || canScrollDown) {
+              isInsideScrollableChild = true;
+              break;
+            }
+          }
+        }
+        target = target.parentElement;
+      }
+
+      if (isInsideScrollableChild) {
+        return;
+      }
+
+      // If the board has horizontal overflow, convert vertical wheel scroll to horizontal scroll
+      if (el.scrollWidth > el.clientWidth) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+    };
+  }, [boardRef]);
+
+  const scrollByAmount = (amount: number) => {
+    boardRef.current?.scrollBy({ left: amount, behavior: 'smooth' });
+  };
 
   const handleCreateColumn = () => {
     const trimmed = newColTitle.trim();
@@ -50,12 +128,37 @@ export const Board: React.FC<BoardProps> = ({
   };
 
   return (
-    <div
-      ref={boardRef}
-      className={`flex gap-3 sm:gap-4 overflow-x-auto pb-6 pt-1 px-1 no-scrollbar items-start ${
-        isDragging ? 'snap-none' : 'snap-x snap-mandatory sm:snap-none'
-      }`}
-    >
+    <div className="relative w-full min-w-0 group/board">
+      {/* Scroll Left Button */}
+      {canScrollLeft && !isDragging && (
+        <button
+          type="button"
+          onClick={() => scrollByAmount(-350)}
+          className="hidden sm:flex absolute left-0 top-24 z-30 w-9 h-9 items-center justify-center rounded-full bg-white/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-200 shadow-xl border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+          title="向左滚动泳道"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+      )}
+
+      {/* Scroll Right Button */}
+      {canScrollRight && !isDragging && (
+        <button
+          type="button"
+          onClick={() => scrollByAmount(350)}
+          className="hidden sm:flex absolute right-0 top-24 z-30 w-9 h-9 items-center justify-center rounded-full bg-white/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-200 shadow-xl border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+          title="向右滚动泳道"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      )}
+
+      <div
+        ref={boardRef}
+        className={`w-full flex gap-3 sm:gap-4 overflow-x-auto pb-6 pt-1 px-1 board-scrollbar items-start ${
+          isDragging ? 'snap-none' : 'snap-x snap-mandatory sm:snap-none'
+        }`}
+      >
       {columns.map((column) => {
         const columnTasks = tasks
           .filter((t) => t.columnId === column.id)
@@ -122,5 +225,6 @@ export const Board: React.FC<BoardProps> = ({
         )}
       </div>
     </div>
+  </div>
   );
 };

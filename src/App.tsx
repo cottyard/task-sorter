@@ -691,7 +691,7 @@ export function App() {
 
   return (
     <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors relative">
+      <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors relative w-full overflow-x-hidden">
         {/* Top Header with Dual Floating Drop Capsules & Archive Switcher */}
         <Header
           searchQuery={searchQuery}
@@ -712,9 +712,9 @@ export function App() {
         />
 
         {/* Main Workspace Area */}
-        <main className="flex-1 max-w-[1680px] w-full mx-auto px-2 sm:px-5 flex flex-col pt-3">
+        <main className="flex-1 max-w-[1680px] w-full mx-auto px-2 sm:px-5 flex flex-col pt-3 min-w-0">
           {currentView === 'board' ? (
-            <div className="flex-1">
+            <div className="flex-1 w-full min-w-0 flex flex-col">
               <Board
                 columns={columns}
                 tasks={filteredTasks}
