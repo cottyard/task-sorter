@@ -207,3 +207,52 @@ test('API Tests: Task Archiving & Unarchiving Lifecycle', async () => {
   // Clean up
   await fetch(`${BASE_URL}/api/tasks/${task.id}`, { method: 'DELETE' });
 });
+
+test('API Tests: Batch Archiving & Unarchiving Lifecycle', async () => {
+  // 1. Create two tasks
+  const t1Res = await fetch(`${BASE_URL}/api/tasks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: '批量归档任务1',
+      columnId: 'short',
+    }),
+  });
+  const t1 = await t1Res.json();
+
+  const t2Res = await fetch(`${BASE_URL}/api/tasks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: '批量归档任务2',
+      columnId: 'short',
+    }),
+  });
+  const t2 = await t2Res.json();
+
+  // 2. Batch archive
+  const batchArchiveRes = await fetch(`${BASE_URL}/api/tasks/archive-batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ taskIds: [t1.id, t2.id] }),
+  });
+  assert.equal(batchArchiveRes.status, 200);
+  const archived = await batchArchiveRes.json();
+  assert.equal(archived.length, 2);
+  assert.ok(archived.every((t) => t.archived === true));
+
+  // 3. Batch unarchive
+  const batchUnarchiveRes = await fetch(`${BASE_URL}/api/tasks/unarchive-batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ taskIds: [t1.id, t2.id] }),
+  });
+  assert.equal(batchUnarchiveRes.status, 200);
+  const unarchived = await batchUnarchiveRes.json();
+  assert.equal(unarchived.length, 2);
+  assert.ok(unarchived.every((t) => t.archived === false));
+
+  // Clean up
+  await fetch(`${BASE_URL}/api/tasks/${t1.id}`, { method: 'DELETE' });
+  await fetch(`${BASE_URL}/api/tasks/${t2.id}`, { method: 'DELETE' });
+});

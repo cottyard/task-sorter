@@ -221,6 +221,59 @@ export function unarchiveTask(taskId) {
   return parseTaskRow(row);
 }
 
+// Archive multiple tasks
+export function archiveTasks(taskIds) {
+  const now = new Date().toISOString();
+  const updateStmt = db.prepare(
+    'UPDATE tasks SET archived = 1, archivedAt = ?, completed = 1, completedAt = COALESCE(completedAt, ?) WHERE id = ?'
+  );
+  const getStmt = db.prepare('SELECT * FROM tasks WHERE id = ?');
+  const archived = [];
+
+  db.exec('BEGIN TRANSACTION;');
+  try {
+    for (const id of taskIds) {
+      updateStmt.run(now, now, id);
+      const row = getStmt.get(id);
+      if (row) {
+        archived.push(parseTaskRow(row));
+      }
+    }
+    db.exec('COMMIT;');
+  } catch (err) {
+    db.exec('ROLLBACK;');
+    throw err;
+  }
+
+  return archived;
+}
+
+// Unarchive multiple tasks
+export function unarchiveTasks(taskIds) {
+  const updateStmt = db.prepare(
+    'UPDATE tasks SET archived = 0, archivedAt = NULL WHERE id = ?'
+  );
+  const getStmt = db.prepare('SELECT * FROM tasks WHERE id = ?');
+  const unarchived = [];
+
+  db.exec('BEGIN TRANSACTION;');
+  try {
+    for (const id of taskIds) {
+      updateStmt.run(id);
+      const row = getStmt.get(id);
+      if (row) {
+        unarchived.push(parseTaskRow(row));
+      }
+    }
+    db.exec('COMMIT;');
+  } catch (err) {
+    db.exec('ROLLBACK;');
+    throw err;
+  }
+
+  return unarchived;
+}
+
 // Write entire state (used for compatibility)
 export async function writeDb(data) {
   db.exec('BEGIN TRANSACTION;');

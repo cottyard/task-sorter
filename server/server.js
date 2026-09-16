@@ -5,7 +5,7 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { readDb, writeDb, backupDb, getArchivedTasks, archiveTask, unarchiveTask, db } from './db.js';
+import { readDb, writeDb, backupDb, getArchivedTasks, archiveTask, unarchiveTask, archiveTasks, unarchiveTasks, db } from './db.js';
 import { getLanIps } from './lanIp.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -137,6 +137,38 @@ app.post('/api/tasks/:id/unarchive', (req, res) => {
     res.json(unarchived);
   } catch (err) {
     res.status(500).json({ error: 'Failed to unarchive task' });
+  }
+});
+
+// API: Batch archive tasks
+app.post('/api/tasks/archive-batch', (req, res) => {
+  try {
+    const { taskIds } = req.body;
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      return res.status(400).json({ error: 'taskIds must be a non-empty array' });
+    }
+    const archivedList = archiveTasks(taskIds);
+    archivedList.forEach((task) => io.emit('task:archived', task));
+    io.emit('tasks:archived', archivedList);
+    res.json(archivedList);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to archive tasks' });
+  }
+});
+
+// API: Batch unarchive tasks
+app.post('/api/tasks/unarchive-batch', (req, res) => {
+  try {
+    const { taskIds } = req.body;
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      return res.status(400).json({ error: 'taskIds must be a non-empty array' });
+    }
+    const unarchivedList = unarchiveTasks(taskIds);
+    unarchivedList.forEach((task) => io.emit('task:unarchived', task));
+    io.emit('tasks:unarchived', unarchivedList);
+    res.json(unarchivedList);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to unarchive tasks' });
   }
 });
 

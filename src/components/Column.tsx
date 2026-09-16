@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Droppable } from '@hello-pangea/dnd';
 import { Column as ColumnType, Task, Member } from '../types';
 import { TaskCard } from './TaskCard';
-import { Plus, Edit2, Trash2, Check, Copy, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, Copy, CheckCircle2, Archive } from 'lucide-react';
 import { formatTasksPrettyPrint, copyToClipboard } from '../utils/taskExport';
 
 interface ColumnProps {
@@ -15,6 +15,7 @@ interface ColumnProps {
   onQuickAddTask: (columnId: string) => void;
   onUpdateColumnTitle: (columnId: string, title: string) => void;
   onDeleteColumn: (columnId: string) => void;
+  onArchiveTasks: (taskIds: string[]) => void;
 }
 
 const COLUMN_COLOR_THEMES: Record<
@@ -57,6 +58,7 @@ export const Column: React.FC<ColumnProps> = ({
   onQuickAddTask,
   onUpdateColumnTitle,
   onDeleteColumn,
+  onArchiveTasks,
 }) => {
   const theme = COLUMN_COLOR_THEMES[column.badgeColor] || COLUMN_COLOR_THEMES.blue;
   const activeTasks = tasks.filter((t) => !t.completed);
@@ -86,6 +88,13 @@ export const Column: React.FC<ColumnProps> = ({
       setCopiedCompleted(true);
       setTimeout(() => setCopiedCompleted(false), 2000);
     }
+  };
+
+  const handleArchiveCompleted = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (completedTasks.length === 0) return;
+    const taskIds = completedTasks.map((t) => t.id);
+    onArchiveTasks(taskIds);
   };
 
   useEffect(() => {
@@ -238,19 +247,9 @@ export const Column: React.FC<ColumnProps> = ({
             {/* Completed tasks section */}
             {completedTasks.length > 0 && (
               <div className="mt-3 pt-1">
-                {/* Interactive Divider Line with Copy Feature */}
+                {/* Interactive Divider Line with Archive & Copy Features */}
                 <div
-                  onClick={handleCopyCompleted}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleCopyCompleted();
-                    }
-                  }}
-                  title="点击复制「已完成」任务清单"
-                  className="group/divider flex items-center gap-2 px-1.5 py-1.5 rounded-xl cursor-pointer select-none transition-all duration-150 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 active:scale-[0.99] mb-1.5"
+                  className="group/divider flex items-center gap-2 px-1.5 py-1.5 rounded-xl select-none mb-1.5 transition-all duration-150"
                 >
                   <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500 group-hover/divider:text-slate-700 dark:group-hover/divider:text-slate-200 transition-colors">
                     <CheckCircle2 className="w-3 h-3 text-emerald-500/80 group-hover/divider:text-emerald-500 transition-colors shrink-0" />
@@ -263,19 +262,35 @@ export const Column: React.FC<ColumnProps> = ({
                   {/* Center Divider Line */}
                   <div className="flex-1 h-px bg-slate-200/80 dark:bg-slate-800/80 group-hover/divider:bg-indigo-300/80 dark:group-hover/divider:bg-indigo-600/80 transition-colors" />
 
-                  {/* Copy Action Badge */}
-                  <div
-                    className={`flex items-center justify-center w-5 h-5 rounded-md border transition-all duration-150 shrink-0 ${
-                      copiedCompleted
-                        ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-300 scale-110'
-                        : 'bg-white/80 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/70 text-slate-400 group-hover/divider:text-indigo-600 dark:group-hover/divider:text-indigo-400 group-hover/divider:border-indigo-200 dark:group-hover/divider:border-indigo-800 group-hover/divider:bg-white dark:group-hover/divider:bg-slate-800 shadow-2xs'
-                    }`}
-                  >
-                    {copiedCompleted ? (
-                      <Check className="w-3 h-3 text-emerald-500 animate-in zoom-in-50 duration-150" />
-                    ) : (
-                      <Copy className="w-3 h-3" />
-                    )}
+                  {/* Action Badges: Archive (Left of Copy) & Copy */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Archive Action Badge */}
+                    <button
+                      type="button"
+                      onClick={handleArchiveCompleted}
+                      title="一键归档所有已完成任务"
+                      className="flex items-center justify-center w-5 h-5 rounded-md border border-slate-200/70 dark:border-slate-700/70 bg-white/80 dark:bg-slate-800/80 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/60 group-hover/divider:text-slate-600 dark:group-hover/divider:text-slate-300 group-hover/divider:border-slate-300 dark:group-hover/divider:border-slate-600 shadow-2xs transition-all duration-150 shrink-0 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      <Archive className="w-3 h-3" />
+                    </button>
+
+                    {/* Copy Action Badge */}
+                    <button
+                      type="button"
+                      onClick={handleCopyCompleted}
+                      title="点击复制「已完成」任务清单"
+                      className={`flex items-center justify-center w-5 h-5 rounded-md border transition-all duration-150 cursor-pointer shrink-0 ${
+                        copiedCompleted
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-300 scale-110'
+                          : 'bg-white/80 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/70 text-slate-400 group-hover/divider:text-indigo-600 dark:group-hover/divider:text-indigo-400 group-hover/divider:border-indigo-200 dark:group-hover/divider:border-indigo-800 group-hover/divider:bg-white dark:group-hover/divider:bg-slate-800 shadow-2xs hover:scale-105 active:scale-95'
+                      }`}
+                    >
+                      {copiedCompleted ? (
+                        <Check className="w-3 h-3 text-emerald-500 animate-in zoom-in-50 duration-150" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </button>
                   </div>
                 </div>
 

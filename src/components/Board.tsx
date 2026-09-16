@@ -16,6 +16,7 @@ interface BoardProps {
   onAddColumn: (title: string) => void;
   onUpdateColumnTitle: (columnId: string, title: string) => void;
   onDeleteColumn: (columnId: string) => void;
+  onArchiveTasks: (taskIds: string[]) => void;
 }
 
 export const Board: React.FC<BoardProps> = ({
@@ -31,6 +32,7 @@ export const Board: React.FC<BoardProps> = ({
   onAddColumn,
   onUpdateColumnTitle,
   onDeleteColumn,
+  onArchiveTasks,
 }) => {
   const [isAddingCol, setIsAddingCol] = useState(false);
   const [newColTitle, setNewColTitle] = useState('');
@@ -71,6 +73,7 @@ export const Board: React.FC<BoardProps> = ({
               onQuickAddTask={onQuickAddTask}
               onUpdateColumnTitle={onUpdateColumnTitle}
               onDeleteColumn={onDeleteColumn}
+              onArchiveTasks={onArchiveTasks}
             />
           </div>
         );

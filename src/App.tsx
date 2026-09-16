@@ -473,6 +473,75 @@ export function App() {
     }
   };
 
+  const handleArchiveTasks = async (taskIds: string[]) => {
+    if (!taskIds || taskIds.length === 0) return;
+
+    const tasksToArchive = tasks.filter((t) => taskIds.includes(t.id));
+    if (tasksToArchive.length === 0) return;
+
+    // Optimistic removal from active board
+    const idSet = new Set(taskIds);
+    setTasks((prev) => prev.filter((t) => !idSet.has(t.id)));
+
+    // Show undo toast notification
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    const toastMsg =
+      tasksToArchive.length === 1
+        ? `已归档「${tasksToArchive[0].title}」`
+        : `已归档 ${tasksToArchive.length} 个已完成任务`;
+
+    setToast({
+      id: `batch-${Date.now()}`,
+      message: toastMsg,
+      type: 'archive',
+      onUndo: async () => {
+        setToast(null);
+        setTasks((prev) => {
+          const existingIds = new Set(prev.map((t) => t.id));
+          const toRestore = tasksToArchive.filter((t) => !existingIds.has(t.id));
+          return [...toRestore, ...prev];
+        });
+        try {
+          const res = await fetch('/api/tasks/unarchive-batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ taskIds }),
+          });
+          if (!res.ok) {
+            await Promise.all(
+              taskIds.map((id) =>
+                fetch(`/api/tasks/${id}/unarchive`, { method: 'POST' })
+              )
+            );
+          }
+        } catch (e) {
+          console.error('Failed to undo archive batch:', e);
+        }
+      },
+    });
+
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+    }, 4500);
+
+    try {
+      const res = await fetch('/api/tasks/archive-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskIds }),
+      });
+      if (!res.ok) {
+        await Promise.all(
+          taskIds.map((id) =>
+            fetch(`/api/tasks/${id}/archive`, { method: 'POST' })
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Failed to archive tasks batch:', err);
+    }
+  };
+
   const handleUnarchiveTask = async (taskId: string) => {
     try {
       const res = await fetch(`/api/tasks/${taskId}/unarchive`, { method: 'POST' });
@@ -659,6 +728,7 @@ export function App() {
                 onAddColumn={handleAddColumn}
                 onUpdateColumnTitle={handleUpdateColumnTitle}
                 onDeleteColumn={handleDeleteColumn}
+                onArchiveTasks={handleArchiveTasks}
               />
             </div>
           ) : (
