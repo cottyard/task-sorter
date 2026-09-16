@@ -185,16 +185,6 @@ export const Board: React.FC<BoardProps> = ({
     boardRef.current?.scrollBy({ left: amount, behavior: 'smooth' });
   };
 
-  const scrollToColumnIndex = (index: number) => {
-    const el = boardRef.current;
-    if (!el) return;
-    const colEl = el.children[index] as HTMLElement | undefined;
-    if (colEl) {
-      const targetLeft = colEl.offsetLeft - 16;
-      el.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
-    }
-  };
-
   const handleCreateColumn = () => {
     const trimmed = newColTitle.trim();
     if (trimmed && !isSubmitting) {
@@ -208,30 +198,6 @@ export const Board: React.FC<BoardProps> = ({
 
   return (
     <div className="relative w-full min-w-0 group/board flex flex-col">
-      {/* Quick Swimlane Navigator Pills (when 4+ columns exist) */}
-      {columns.length >= 4 && (
-        <div className="flex items-center justify-end pb-2 px-1 text-xs select-none">
-          <div className="flex items-center gap-1 bg-slate-200/60 dark:bg-slate-800/60 p-1 rounded-full border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xs">
-            {columns.map((col, idx) => {
-              const colTasks = tasks.filter((t) => t.columnId === col.id);
-              return (
-                <button
-                  key={col.id}
-                  type="button"
-                  onClick={() => scrollToColumnIndex(idx)}
-                  className="group/pill flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium transition-all hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer"
-                  title={`定位到「${col.title}」(${colTasks.length} 项)`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 group-hover/pill:bg-indigo-500 transition-colors" />
-                  <span className="max-w-[75px] truncate">{col.title}</span>
-                  <span className="text-[10px] opacity-60 font-mono">({colTasks.length})</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Main Board Row: Left Arrow | Scrollable Lanes Viewport | Right Arrow */}
       <div className="flex items-center gap-1 sm:gap-2 w-full min-w-0">
         {/* Left Arrow Button (Outside swimlanes, never overlapping) */}
