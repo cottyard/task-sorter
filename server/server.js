@@ -327,7 +327,14 @@ setInterval(
   24 * 60 * 60 * 1000
 );
 
-server.listen(PORT, '0.0.0.0', () => {
+// 启动服务（带端口占用重试）。
+// 开机自启动时，80 端口常被其它开机程序（百度网盘/向日葵等）短暂抢占，
+// 若一次性 listen 失败就退出，会导致服务起不来。这里在端口被占用时
+// 自动退避重试，直到端口释放或达到最大重试次数。
+const MAX_RETRIES = Number(process.env.TASKSORTER_START_RETRIES) || 60;   // 最多重试 60 次
+const RETRY_DELAY_MS = Number(process.env.TASKSORTER_START_RETRY_DELAY) || 5000; // 每次间隔 5 秒（总窗口约 5 分钟）
+
+function printReady() {
   const lanIps = getLanIps();
   console.log('\n✨ ==============================================');
   console.log('🚀 TaskSorter 团队任务跟踪服务已就绪 (SQLite 驱动)！');
@@ -338,4 +345,23 @@ server.listen(PORT, '0.0.0.0', () => {
   });
   console.log('📁 数据存储位置: data/tasksorter.db (高性能 SQLite 数据库)');
   console.log('==============================================\n');
-});
+}
+
+server.once('listening', printReady);
+
+function listenWithRetry(attempt = 0) {
+  server.once('error', (err) => {
+    if (err.code === 'EADDRINUSE' && attempt < MAX_RETRIES) {
+      console.log(
+        `[WARN] 端口 ${PORT} 被占用 (EADDRINUSE)，${RETRY_DELAY_MS / 1000}s 后重试 (${attempt + 1}/${MAX_RETRIES})...`
+      );
+      setTimeout(() => listenWithRetry(attempt + 1), RETRY_DELAY_MS);
+    } else {
+      console.error(`[FATAL] 服务启动失败: ${err.message} (code: ${err.code})`);
+      process.exit(1);
+    }
+  });
+  server.listen(PORT, '0.0.0.0');
+}
+
+listenWithRetry();

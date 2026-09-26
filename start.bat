@@ -22,6 +22,10 @@ REM directory of C:\Windows\System32, which would otherwise
 REM make node fail to find server/server.js.
 cd /d "%~dp0"
 
+REM 日志文件：记录 node 真实 stdout/stderr（带时间戳），用于排查。
+set "LOGFILE=%TEMP%\TaskSorter-autostart.log"
+set "ERRFILE=%TEMP%\TaskSorter-autostart-error.log"
+
 title TaskSorter - Team Task Board (port 80)
 
 echo ========================================================
@@ -29,10 +33,17 @@ echo        TaskSorter Team Task Service (port 80)
 echo ========================================================
 echo.
 
+REM 开机自启动时：先等待若干秒，避开其它开机程序的端口抢占高峰。
+REM 使用 ping 做延时（不依赖控制台/stdin，隐藏模式下同样可用）。
+if "!HIDDEN!"=="1" (
+    echo [INFO] 开机自启动模式：等待 10 秒后启动，避开端口竞争...
+    ping -n 11 127.0.0.1 >nul
+)
+
 where node >nul 2>nul
 if errorlevel 1 (
     if "!HIDDEN!"=="1" (
-        echo [ERROR] Node.js not found. Install from https://nodejs.org > "%TEMP%\TaskSorter-autostart-error.log"
+        echo [%date% %time%] [ERROR] Node.js not found. Install from https://nodejs.org > "%ERRFILE%"
         exit /b 1
     )
     echo [ERROR] Node.js not found. Install from https://nodejs.org
@@ -56,15 +67,27 @@ if not exist "dist\" (
 echo [INFO] Service running on port 80. Keep this window open (can be minimized).
 echo.
 
-node server/server.js
+if "!HIDDEN!"=="1" (
+    REM 隐藏模式：把 node 真实 stdout/stderr 追加写入日志（带时间戳），
+    REM 方便事后排查端口竞争等真实原因。
+    echo [%date% %time%] TaskSorter auto-start begin >> "%LOGFILE%"
+    node server/server.js >> "%LOGFILE%" 2>&1
+) else (
+    REM 前台模式：控制台直接显示输出。
+    node server/server.js
+)
 
-if errorlevel 1 (
+set "EXITCODE=%errorlevel%"
+
+if not "!EXITCODE!"=="0" (
     if "!HIDDEN!"=="1" (
-        echo [ERROR] Service failed to start. Port 80 may be in use. > "%TEMP%\TaskSorter-autostart-error.log"
+        echo [%date% %time%] [ERROR] Service exited with code !EXITCODE!. See log below. >> "%ERRFILE%"
+        echo ---- last 30 lines of %LOGFILE% ---- >> "%ERRFILE%"
+        powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; Get-Content '%LOGFILE%' -Tail 30 -Encoding UTF8 | Out-File -Append -Encoding UTF8 '%ERRFILE%'"
         exit /b 1
     )
     echo.
-    echo [INFO] If port conflict, check what is using port 80, or run as Administrator.
+    echo [ERROR] 服务异常退出（退出码 !EXITCODE!）。详情见日志：%LOGFILE%
     pause
 )
 goto :eof
