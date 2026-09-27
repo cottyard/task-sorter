@@ -337,6 +337,7 @@ const RETRY_DELAY_MS = Number(process.env.TASKSORTER_START_RETRY_DELAY) || 5000;
 function printReady() {
   const lanIps = getLanIps();
   console.log('\n✨ ==============================================');
+  console.log(`🕒 启动完成时间: ${new Date().toLocaleString('zh-CN')}`);
   console.log('🚀 TaskSorter 团队任务跟踪服务已就绪 (SQLite 驱动)！');
   console.log(`📡 本机访问:   http://localhost${PORT === 80 ? '' : `:${PORT}`}`);
   console.log('🌐 局域网访问:');
