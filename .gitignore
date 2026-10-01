@@ -41,3 +41,6 @@ lerna-debug.log*
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Agent / IDE local working memory (must never be committed)
+.workbuddy/

@@ -350,17 +350,52 @@ function printReady() {
 
 server.once('listening', printReady);
 
+// 探测端口上是否已经跑着本服务（用于唤醒/重复触发时避免二次启动）。
+function probeExistingTaskSorter(cb) {
+  const req = http.get(
+    { host: '127.0.0.1', port: PORT, path: '/api/data', timeout: 2000 },
+    (res) => {
+      let body = '';
+      res.on('data', (c) => (body += c));
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(body);
+          cb(json && typeof json.serverPort !== 'undefined');
+        } catch {
+          cb(false);
+        }
+      });
+    }
+  );
+  req.on('error', () => cb(false));
+  req.on('timeout', () => {
+    req.destroy();
+    cb(false);
+  });
+}
+
 function listenWithRetry(attempt = 0) {
   server.once('error', (err) => {
-    if (err.code === 'EADDRINUSE' && attempt < MAX_RETRIES) {
-      console.log(
-        `[WARN] 端口 ${PORT} 被占用 (EADDRINUSE)，${RETRY_DELAY_MS / 1000}s 后重试 (${attempt + 1}/${MAX_RETRIES})...`
-      );
-      setTimeout(() => listenWithRetry(attempt + 1), RETRY_DELAY_MS);
-    } else {
+    if (err.code !== 'EADDRINUSE') {
       console.error(`[FATAL] 服务启动失败: ${err.message} (code: ${err.code})`);
       process.exit(1);
     }
+    // 端口被占用：先确认是不是本服务已经在运行。
+    probeExistingTaskSorter((isSelf) => {
+      if (isSelf) {
+        console.log('[INFO] 检测到 TaskSorter 已在运行，本实例直接退出。');
+        process.exit(0);
+      }
+      if (attempt < MAX_RETRIES) {
+        console.log(
+          `[WARN] 端口 ${PORT} 被占用 (EADDRINUSE)，${RETRY_DELAY_MS / 1000}s 后重试 (${attempt + 1}/${MAX_RETRIES})...`
+        );
+        setTimeout(() => listenWithRetry(attempt + 1), RETRY_DELAY_MS);
+      } else {
+        console.error(`[FATAL] 端口 ${PORT} 持续被占用，已重试 ${MAX_RETRIES} 次，放弃启动。`);
+        process.exit(1);
+      }
+    });
   });
   server.listen(PORT, '0.0.0.0');
 }

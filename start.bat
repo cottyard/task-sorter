@@ -4,8 +4,8 @@ setlocal enabledelayedexpansion
 REM ============================================================
 REM  TaskSorter launcher
 REM  start.bat           -> run server in foreground (port 80)
-REM  start.bat install   -> install auto-start on boot (hidden)
-REM  start.bat uninstall -> remove auto-start on boot
+REM  start.bat install   -> install auto-start (scheduled task)
+REM  start.bat uninstall -> remove auto-start
 REM  start.bat --hidden  -> silent mode (used by auto-start)
 REM
 REM  IMPORTANT - encoding rules for this file:
@@ -105,24 +105,53 @@ if not "!EXITCODE!"=="0" (
 goto :eof
 
 :install
-set "STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
-set "VB_FILE=%STARTUP_DIR%\TaskSorter.vbs"
-if not exist "%STARTUP_DIR%" mkdir "%STARTUP_DIR%"
-> "%VB_FILE%" echo Set sh = CreateObject("WScript.Shell")
->> "%VB_FILE%" echo sh.Run "cmd /c ""%~dp0start.bat"" --hidden", 0, False
-echo [DONE] Auto-start installed: %VB_FILE%
-echo TaskSorter will start on port 80 (hidden) after next boot.
+REM Registering a scheduled task needs Administrator rights, so
+REM re-launch this script elevated (UAC prompt) when needed.
+net session >nul 2>&1
+if errorlevel 1 (
+    echo [INFO] Administrator rights are required. Requesting elevation...
+    powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -ArgumentList 'install' -Verb RunAs"
+    exit /b
+)
+REM Install a Windows scheduled task that starts the server on
+REM boot, on logon AND on resume from sleep (the old Startup-folder
+REM shortcut never fired on sleep/wake, which is how this PC is used).
+set "PS1=%~dp0scripts\install-task.ps1"
+if not exist "%PS1%" (
+    echo [ERROR] Installer not found: %PS1%
+    pause
+    exit /b 1
+)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%"
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Failed to install the scheduled task.
+    pause
+    exit /b 1
+)
+REM Remove the legacy Startup-folder launcher to avoid a double start.
+set "LEGACY_VBS=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\TaskSorter.vbs"
+if exist "%LEGACY_VBS%" del /f /q "%LEGACY_VBS%"
+echo.
+echo [DONE] Scheduled task TaskSorter installed.
+echo It starts on: boot, logon and resume from sleep.
 echo To remove it, run: start.bat uninstall
 pause
 goto :eof
 
 :uninstall
-set "VB_FILE=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\TaskSorter.vbs"
-if exist "%VB_FILE%" (
-    del /f /q "%VB_FILE%"
-    echo [DONE] Auto-start removed.
-) else (
-    echo [INFO] No auto-start entry found.
+net session >nul 2>&1
+if errorlevel 1 (
+    echo [INFO] Administrator rights are required. Requesting elevation...
+    powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -ArgumentList 'uninstall' -Verb RunAs"
+    exit /b
+)
+set "PS1=%~dp0scripts\uninstall-task.ps1"
+if exist "%PS1%" powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%"
+set "LEGACY_VBS=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\TaskSorter.vbs"
+if exist "%LEGACY_VBS%" (
+    del /f /q "%LEGACY_VBS%"
+    echo [DONE] Legacy Startup-folder launcher removed.
 )
 pause
 goto :eof
